@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "private-local-ai-assistant"
+version = "0.1.0"
+description = "A private AI assistant on a local model through Ollama: RAG over your documents with citations and a tool-using agent. Nothing leaves the machine."
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+  "requests>=2.31",
+  "numpy>=1.26",
+  "pypdf>=4.0",
+  "python-docx>=1.1",
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+]
+
+[project.optional-dependencies]
+cloud = ["anthropic>=2.0", "google-genai>=1.0", "openai>=1.40"]
+
+[project.scripts]
+local-ai = "local_ai.cli:main"
+
+[tool.setuptools]
+packages = ["local_ai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "E731"]

@@ -1,0 +1,6 @@
+requests>=2.31
+numpy>=1.26
+pypdf>=4.0
+python-docx>=1.1
+fastapi>=0.110
+uvicorn>=0.29

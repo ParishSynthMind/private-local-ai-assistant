@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-06 20:08 +04",
+  "hardware": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.16",
+    "Model Name": "iMac",
+    "Model Identifier": "Mac16,2",
+    "Chip": "Apple M4",
+    "Total Number of Cores": "8 (4 Performance and 4 Efficiency)",
+    "Memory": "24 GB",
+    "macOS": "26.6.2"
+  },
+  "ollama": "0.40.14",
+  "models": {
+    "qwen3:4b-instruct": 2.5,
+    "llama3.2:3b": 2.02,
+    "nomic-embed-text:latest": 0.27
+  },
+  "index_seconds": 0.36,
+  "cold_start_seconds": {
+    "qwen3:4b-instruct": 1.01,
+    "llama3.2:3b": 0.73
+  }
+}
