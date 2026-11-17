@@ -10,6 +10,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+DEFAULT_AI_DISCLOSURE = "I'm an AI assistant for {company}."
+
 KEYCHAIN_ITEMS = {"ANTHROPIC_API_KEY": "anthropic-api-key", "GEMINI_API_KEY": "gemini-api-key",
                   "OPENAI_API_KEY": "openai-api-key"}
 
@@ -31,6 +33,18 @@ class Settings:
     num_ctx: int = 8192
     chunk_chars: int = 900
     screen_passages: bool = True        # leave passages that address the AI out of search
+    # EU AI Act Art. 50: say it is an AI on the first message of each conversation. Blank text
+    # falls back to the default; it is only switched off when the client's written request is recorded.
+    ai_disclosure: str = DEFAULT_AI_DISCLOSURE
+    ai_disclosure_removed_by: str = ""   # e.g. "2026-11-17, written request from J. Smith (ops)"
+
+    @property
+    def disclosure(self) -> str:
+        """The AI disclosure line to show, or "" only when its removal was requested in writing."""
+        if self.ai_disclosure_removed_by.strip():
+            return ""
+        text = (self.ai_disclosure or "").strip() or DEFAULT_AI_DISCLOSURE
+        return text.replace("{company}", self.company or "this company")
 
     @classmethod
     def from_env(cls, env=None) -> "Settings":
@@ -55,6 +69,8 @@ class Settings:
         s.num_ctx = _int(e, "NUM_CTX", s.num_ctx, 2048, 262144)
         s.chunk_chars = _int(e, "CHUNK_CHARS", s.chunk_chars, 200, 4000)
         s.screen_passages = e.get("SCREEN_PASSAGES", "1") not in ("0", "false", "no")
+        s.ai_disclosure = e.get("AI_DISCLOSURE", s.ai_disclosure)
+        s.ai_disclosure_removed_by = e.get("AI_DISCLOSURE_REMOVED_BY_WRITTEN_REQUEST", "").strip()
         return s
 
 

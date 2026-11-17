@@ -35,10 +35,12 @@ cursor:pointer}button.alt{background:#6639ba}.card{border:1px solid #d1d9e0;bord
 margin:12px 0}.q{font-weight:600;margin-bottom:6px}.src{font-size:13px;color:#59636e;margin-top:8px}
 .src div{margin:2px 0}.meta{font-size:12px;color:#818b98;margin-top:8px}.step{font-family:SF Mono,Menlo,monospace;
 font-size:12px;color:#59636e;margin:2px 0}.warn{color:#9a6700}
+.ai{background:#ddf4ff;color:#0a3069;border-radius:8px;padding:8px 12px;font-size:14px;margin:0 0 12px}
 </style></head><body>
 <h1>Private AI assistant</h1>
 <p class="sub">__COMPANY__ documents, answered by <b>__MODEL__</b>
 <span class="badge __BADGECLASS__">__BADGE__</span></p>
+__DISCLOSURE__
 <form id="f"><input id="q" placeholder="Ask about the documents, or give the agent a task" autofocus>
 <button type="submit">Ask</button><button type="button" class="alt" id="ag">Agent</button></form>
 <div id="out"></div>
@@ -79,10 +81,16 @@ def create_app(app) -> FastAPI:
             return JSONResponse({"detail": "this assistant only answers on localhost"}, status_code=403)
         return await call_next(request)
 
+    def disclosure() -> str:
+        return app.settings.disclosure
+
     @api.get("/", response_class=HTMLResponse)
     def page():
+        # each page load is a new conversation: the AI disclosure is the first thing the assistant shows
         a = app.assistant.answerer
-        return (PAGE.replace("__COMPANY__", html.escape(app.settings.company))
+        d = disclosure()
+        return (PAGE.replace("__DISCLOSURE__", f'<p class="ai" id="ai-disclosure">{html.escape(d)}</p>' if d else "")
+                .replace("__COMPANY__", html.escape(app.settings.company))
                 .replace("__MODEL__", html.escape(a.model))
                 .replace("__BADGECLASS__", "local" if a.local else "cloud")
                 .replace("__BADGE__", "on this machine, offline" if a.local else f"cloud: {html.escape(a.provider)}"))
@@ -99,12 +107,18 @@ def create_app(app) -> FastAPI:
     @api.post("/api/ask")
     def ask(body: AskIn):
         try:
-            return app.assistant.ask(body.question, history=body.history).to_dict()
+            out = app.assistant.ask(body.question, history=body.history).to_dict()
         except Exception as e:
             raise HTTPException(502, f"{type(e).__name__}: {e}")
+        if not body.history and disclosure():  # first turn of an API conversation: say it is an AI, once
+            out["ai_disclosure"] = disclosure()
+        return out
 
     @api.post("/api/agent")
     def agent(body: AgentIn):
-        return app.agent.run(body.task).to_dict()
+        out = app.agent.run(body.task).to_dict()
+        if disclosure():  # every agent task is a conversation of its own
+            out["ai_disclosure"] = disclosure()
+        return out
 
     return api

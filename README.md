@@ -94,11 +94,15 @@ pip install -e .
 local-ai check && local-ai index && local-ai serve
 ```
 
+## AI disclosure (EU AI Act Article 50)
+
+Every conversation opens by saying it is an AI: "I'm an AI assistant for {company}." It is the first line of `local-ai chat`, `ask` and `agent`, a banner at the top of the web page, and an `ai_disclosure` field on the first `/api/ask` turn (no history) and on every `/api/agent` task. It is shown once per conversation, not on every answer. The text is set with `AI_DISCLOSURE`; leaving it blank keeps the default. It is only switched off when `AI_DISCLOSURE_REMOVED_BY_WRITTEN_REQUEST` records the client's written request (date and who asked). Covered by offline tests in `tests/test_ai_disclosure.py`; the live run and screenshots above predate it.
+
 ## Tests
 
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt && pip install -e .
-pytest      # 137 tests, no Ollama, no model and no key needed
+pytest      # 147 tests, no Ollama, no model and no key needed
 ```
 
 The tests run against `local_ai/fake_ollama.py`, a real HTTP server that copies Ollama's behaviour as recorded from the live server: streaming by default, nanosecond timings, tool-call arguments as objects (and as strings on `/v1`), the exact 404/400/501 errors, and the silent cut of prompts longer than the context. The network guard, citation checks, injection screening, agent limits, calculator safety and the web page's host check are all tested. GitHub Actions runs them on every push.

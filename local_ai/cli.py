@@ -97,11 +97,21 @@ def cmd_flagged(app, args, out=print) -> int:
     return 0
 
 
+def _disclose(app, out) -> None:
+    """Each `ask` / `agent` run is its own conversation, so it opens with the AI disclosure."""
+    if app.settings.disclosure:
+        out(app.settings.disclosure)
+
+
 def cmd_ask(app, args, out=print) -> int:
     ans = app.assistant.ask(" ".join(args.question))
     if args.json:
-        out(json.dumps(ans.to_dict(), indent=2))
+        d = ans.to_dict()
+        if app.settings.disclosure:
+            d["ai_disclosure"] = app.settings.disclosure
+        out(json.dumps(d, indent=2))
     else:
+        _disclose(app, out)
         print_answer(ans, out)
     for w in app.ollama.warnings:
         out(f"warning: {w}")
@@ -109,11 +119,16 @@ def cmd_ask(app, args, out=print) -> int:
 
 
 def cmd_agent(app, args, out=print) -> int:
+    if not args.json:
+        _disclose(app, out)  # before the tool steps, so it is the first thing printed
     run = app.agent.run(" ".join(args.task), on_step=None if args.json else
                         (lambda st: out(f"  -> {st.tool}({json.dumps(st.arguments)}) "
                                         f"{st.result.splitlines()[0][:90] if st.result else ''}")))
     if args.json:
-        out(json.dumps(run.to_dict(), indent=2))
+        d = run.to_dict()
+        if app.settings.disclosure:
+            d["ai_disclosure"] = app.settings.disclosure
+        out(json.dumps(d, indent=2))
     else:
         out(run.answer)
         out(f"[{run.provider} {run.model}] {len(run.steps)} tool calls, {run.model_calls} model calls, "
@@ -123,7 +138,8 @@ def cmd_agent(app, args, out=print) -> int:
 
 def cmd_chat(app, args, out=print, read=input) -> int:
     history = []
-    out("Ask about the documents. Empty line to quit.")
+    # first message of the conversation: say it is an AI (once, not on every answer)
+    out(" ".join(x for x in (app.settings.disclosure, "Ask about the documents. Empty line to quit.") if x))
     while True:
         try:
             q = read("> ").strip()
